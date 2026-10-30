@@ -20,10 +20,32 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+
       - name: Build Release Win32
-        shell: cmd
+        shell: pwsh
         run: |
-          msbuild mss32\mss32.sln /m /p:Configuration=Release /p:Platform=Win32 /bl:build.binlog
+          Write-Host "Repository: $env:GITHUB_REPOSITORY"
+          Write-Host "Branch: $env:GITHUB_REF_NAME"
+          Write-Host "Working directory: $(Get-Location)"
+
+          Write-Host "Files in repository root:"
+          Get-ChildItem -Force | Select-Object Name
+
+          Write-Host "Looking for mss32.vcxproj:"
+          $project = Get-ChildItem -Recurse -File -Filter "mss32.vcxproj" |
+            Select-Object -First 1
+
+          if (-not $project) {
+            throw "Project not found. Check repository and branch."
+          }
+
+          Write-Host "Building: $($project.FullName)"
+          & msbuild $project.FullName /m /p:Configuration=Release /p:Platform=Win32 /bl:build.binlog
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "MSBuild failed: $LASTEXITCODE"
+          }
+
 
       - name: Upload build diagnostics
         if: always()
