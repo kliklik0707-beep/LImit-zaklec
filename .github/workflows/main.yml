@@ -22,7 +22,7 @@ jobs:
       - name: Build Release Win32
         shell: cmd
         run: |
-          msbuild mss32\mss32.sln /m /p:Configuration=Release /p:Platform=Win32 /bl:build.binlog
+          msbuild mss32\mss32.vcxproj /m /p:Configuration=Release /p:Platform=Win32 /bl:build.binlog
 
       - name: Upload build logs
         if: always()
