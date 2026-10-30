@@ -1,0 +1,73 @@
+
+name: Build D2ModdingToolset Win32
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Locate Visual Studio project
+        shell: pwsh
+        run: |
+          Write-Host "Searching for Visual Studio projects..."
+          Get-ChildItem -Recurse -File |
+            Where-Object { $_.Extension -in ".sln", ".vcxproj" } |
+            ForEach-Object { Write-Host $_.FullName }
+
+          $project = Get-ChildItem -Recurse -File -Filter "mss32.vcxproj" |
+            Select-Object -First 1
+
+          if (-not $project) {
+            throw "Cannot find mss32.vcxproj in repository."
+          }
+
+          "D2_PROJECT=$($project.FullName)" >> $env:GITHUB_ENV
+          Write-Host "Selected: $($project.FullName)"
+
+      - name: Build Release Win32
+        shell: pwsh
+        run: |
+          $project = $env:D2_PROJECT
+          & msbuild $project /m /p:Configuration=Release /p:Platform=Win32 /v:minimal /bl:build.binlog
+          if ($LASTEXITCODE -ne 0) {
+            throw "MSBuild failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-diagnostics
+          path: build.binlog
+          if-no-files-found: warn
+
+      - name: Find compiled DLL
+        if: success()
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse -File -Filter "mss32.dll" |
+            ForEach-Object {
+              Write-Host "DLL found: $($_.FullName)"
+            }
+
+      - name: Upload compiled DLL
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mss32-release-win32
+          path: |
+            **/Release/mss32.dll
+            **/Release/Mss32.dll
+          if-no-files-found: error
