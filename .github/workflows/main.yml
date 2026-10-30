@@ -1,4 +1,5 @@
 
+
 name: Build D2ModdingToolset
 
 on:
@@ -19,6 +20,12 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Check project files
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse -Include *.vcxproj,*.sln |
+            Select-Object -ExpandProperty FullName
+
       - name: Build Release Win32
         shell: cmd
         run: |
@@ -37,6 +44,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mss32-release
-          path: mss32\Release\mss32.dll
+          path: |
+            **/Release/mss32.dll
+            **/Release/Mss32.dll
           if-no-files-found: warn
+
 
