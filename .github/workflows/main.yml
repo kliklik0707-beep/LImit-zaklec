@@ -17,10 +17,13 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Build Release Win32
-        shell: cmd
-        run: |
-          msbuild mss32\mss32.sln /m /p:Configuration=Release /p:Platform=Win32 /bl:build.binlog
+    - name: Setup MSBuild
+  uses: microsoft/setup-msbuild@v2
+
+- name: Build Release Win32
+  shell: cmd
+  run: |
+    msbuild mss32\mss32.sln /m /p:Configuration=Release /p:Platform=Win32 /bl:build.binlog
 
       - name: Upload build logs
         if: always()
